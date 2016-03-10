@@ -20,17 +20,19 @@ import android.view.SurfaceView;
  */
 public class SurfaceViewActivity extends AppCompatActivity implements SensorEventListener {
 
-    private static int deviceWidth, deviceHeight;
+    private static int deviceWidth;
+    private static int deviceHeight;
     private Sensor mAcceleroMeter;
-    private float accelXValue;
-    private float accelYValue;
+    private static float accelXValue;
+    private static float accelYValue;
     private SensorManager mManager;
+    private final String TAG = "움직이는가";
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
-        EventSufaceView mySurfaceView = new EventSufaceView(this);
+        EventSurfaceView mySurfaceView = new EventSurfaceView(this);
         setContentView(mySurfaceView);
 
         mManager = (SensorManager) getApplicationContext().getSystemService(SENSOR_SERVICE);
@@ -55,7 +57,7 @@ public class SurfaceViewActivity extends AppCompatActivity implements SensorEven
 
     }
 
-    public class EventSufaceView extends SurfaceView implements SurfaceHolder.Callback {
+    public class EventSurfaceView extends SurfaceView implements SurfaceHolder.Callback {
 
         private SurfaceThread thread;
 
@@ -64,17 +66,17 @@ public class SurfaceViewActivity extends AppCompatActivity implements SensorEven
             return super.performClick();
         }
 
-        public EventSufaceView(Context context) {
+        public EventSurfaceView(Context context) {
             super(context);
             init();
         }
 
-        public EventSufaceView(Context context, AttributeSet attrs) {
+        public EventSurfaceView(Context context, AttributeSet attrs) {
             super(context, attrs);
             init();
         }
 
-        public EventSufaceView(Context context, AttributeSet attrs, int defStyle) {
+        public EventSurfaceView(Context context, AttributeSet attrs, int defStyle) {
             super(context, attrs, defStyle);
             init();
         }
@@ -110,16 +112,16 @@ public class SurfaceViewActivity extends AppCompatActivity implements SensorEven
     public class SurfaceThread extends Thread {
 
         private SurfaceHolder mThreadSurfaceHolder;
-        private EventSufaceView mThreadSurfaceView;
+        private EventSurfaceView mThreadSurfaceView;
         private boolean myThreadRun = false;
 
-        public SurfaceThread(SurfaceHolder surfaceHolder, EventSufaceView surfaceView) {
+        public SurfaceThread(SurfaceHolder surfaceHolder, EventSurfaceView surfaceView) {
             mThreadSurfaceHolder = surfaceHolder;
             mThreadSurfaceView = surfaceView;
         }
 
-        public void setRunning(boolean b) {
-            myThreadRun = b;
+        public void setRunning(boolean bool) {
+            myThreadRun = bool;
         }
 
         @Override
@@ -130,7 +132,16 @@ public class SurfaceViewActivity extends AppCompatActivity implements SensorEven
                     c = mThreadSurfaceHolder.lockCanvas(null);
                     synchronized (mThreadSurfaceHolder) {
                         Bitmap bitmap = BitmapFactory.decodeResource(getResources(), R.mipmap.ic_launcher);
+                        // 여기에 accelXValue 값과 accelYValue 값이 제대로 안들어옴.......
                         c.drawBitmap(bitmap, accelXValue, accelYValue, null);
+//                        Log.d(TAG, "run: " + accelXValue);
+//                        Log.d(TAG, "run: " + accelYValue);
+                        if (accelXValue >= deviceWidth) {
+                            accelXValue = deviceWidth;
+                        }
+                        if (accelYValue >= deviceHeight) {
+                            accelYValue = deviceHeight;
+                        }
                     }
                 } finally {
                     if (c != null) {
