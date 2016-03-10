@@ -14,6 +14,7 @@ import android.util.AttributeSet;
 import android.util.DisplayMetrics;
 import android.view.SurfaceHolder;
 import android.view.SurfaceView;
+import android.view.WindowManager;
 
 /**
  * Created by donghaechoi on 2016. 3. 10..
@@ -34,9 +35,11 @@ public class SurfaceViewActivity extends AppCompatActivity implements SensorEven
         setContentView(R.layout.activity_main);
         EventSurfaceView mySurfaceView = new EventSurfaceView(this);
         setContentView(mySurfaceView);
+        getWindow().addFlags(WindowManager.LayoutParams.FLAG_FULLSCREEN);
 
         mManager = (SensorManager) getApplicationContext().getSystemService(SENSOR_SERVICE);
         mAcceleroMeter = mManager.getDefaultSensor(Sensor.TYPE_ACCELEROMETER);
+        mManager.registerListener(this, mAcceleroMeter, SensorManager.SENSOR_DELAY_FASTEST);
 
         DisplayMetrics display = getApplicationContext().getResources().getDisplayMetrics();
         deviceWidth = display.widthPixels;
@@ -50,7 +53,8 @@ public class SurfaceViewActivity extends AppCompatActivity implements SensorEven
             accelXValue = event.values[0];
             accelYValue = event.values[1];
         }
-    }
+    }        requestWindowFeature(Window.FEATURE_NO_TITLE);
+
 
     @Override
     public void onAccuracyChanged(Sensor sensor, int accuracy) {
@@ -58,8 +62,25 @@ public class SurfaceViewActivity extends AppCompatActivity implements SensorEven
     }
 
     public class EventSurfaceView extends SurfaceView implements SurfaceHolder.Callback {
-
         private SurfaceThread thread;
+
+        public void move(float mx, float my) {
+            accelXValue -= (mx * 10f);
+            accelYValue += (my * 10f);
+
+            if (accelXValue < 0) {
+                accelXValue = 0;
+            } else if (accelXValue > accelYValue) {
+                accelXValue = deviceWidth;
+            }
+
+            if (accelYValue < 0) {
+                accelYValue = 0;
+            } else if (accelYValue > deviceHeight) {
+                accelYValue = deviceHeight;
+            }
+            invalidate();
+        }
 
         @Override
         public boolean performClick() {
@@ -127,29 +148,31 @@ public class SurfaceViewActivity extends AppCompatActivity implements SensorEven
         @Override
         public void run() {
             while (myThreadRun) {
-                Canvas c = null;
+                Canvas canvas = null;
                 try {
-                    c = mThreadSurfaceHolder.lockCanvas(null);
+                    canvas = mThreadSurfaceHolder.lockCanvas(null);
                     synchronized (mThreadSurfaceHolder) {
                         Bitmap bitmap = BitmapFactory.decodeResource(getResources(), R.mipmap.ic_launcher);
-                        // 여기에 accelXValue 값과 accelYValue 값이 제대로 안들어옴.......
-                        c.drawBitmap(bitmap, accelXValue, accelYValue, null);
+//                        move(accelXValue, accelYValue);
+                        canvas.drawBitmap(bitmap, accelXValue, accelYValue, null);
 //                        Log.d(TAG, "run: " + accelXValue);
 //                        Log.d(TAG, "run: " + accelYValue);
-                        if (accelXValue >= deviceWidth) {
-                            accelXValue = deviceWidth;
-                        }
-                        if (accelYValue >= deviceHeight) {
-                            accelYValue = deviceHeight;
-                        }
+//                        if (accelXValue >= deviceWidth) {
+//                            accelXValue = deviceWidth;
+//                        }
+//                        if (accelYValue >= deviceHeight) {
+//                            accelYValue = deviceHeight;
+//                        }
                     }
                 } finally {
-                    if (c != null) {
-                        mThreadSurfaceHolder.unlockCanvasAndPost(c);
+                    if (canvas != null) {
+                        mThreadSurfaceHolder.unlockCanvasAndPost(canvas);
                     }
                 }
             }
         }
+
+
     }
 }
 
