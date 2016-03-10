@@ -53,8 +53,7 @@ public class SurfaceViewActivity extends AppCompatActivity implements SensorEven
             accelXValue = event.values[0];
             accelYValue = event.values[1];
         }
-    }        requestWindowFeature(Window.FEATURE_NO_TITLE);
-
+    }
 
     @Override
     public void onAccuracyChanged(Sensor sensor, int accuracy) {
