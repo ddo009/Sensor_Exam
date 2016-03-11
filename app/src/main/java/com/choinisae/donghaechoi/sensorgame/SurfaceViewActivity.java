@@ -24,36 +24,43 @@ public class SurfaceViewActivity extends AppCompatActivity implements SensorEven
     private static int deviceWidth;
     private static int deviceHeight;
     private Sensor mAcceleroMeter;
-    private static float accelXValue;
-    private static float accelYValue;
+    private static float accelXValue = 0;
+    private static float accelYValue = 0;
     private SensorManager mManager;
-    private final String TAG = "움직이는가";
+    private final String TAG = "TAG";
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
-        EventSurfaceView mySurfaceView = new EventSurfaceView(this);
-        setContentView(mySurfaceView);
+        EventSurfaceView view = new EventSurfaceView(this);
+        setContentView(view);
         getWindow().addFlags(WindowManager.LayoutParams.FLAG_FULLSCREEN);
 
         mManager = (SensorManager) getApplicationContext().getSystemService(SENSOR_SERVICE);
         mAcceleroMeter = mManager.getDefaultSensor(Sensor.TYPE_ACCELEROMETER);
-        mManager.registerListener(this, mAcceleroMeter, SensorManager.SENSOR_DELAY_FASTEST);
+        mManager.registerListener(this, mAcceleroMeter, SensorManager.SENSOR_DELAY_GAME);
 
         DisplayMetrics display = getApplicationContext().getResources().getDisplayMetrics();
         deviceWidth = display.widthPixels;
         deviceHeight = display.heightPixels;
+
+        view.move(accelXValue, accelXValue);
     }
 
+    @Override
+    protected void onPause() {
+        super.onPause();
+    }
 
     @Override
     public void onSensorChanged(SensorEvent event) {
         if (event.sensor.getType() == mAcceleroMeter.getType()) {
-            accelXValue = event.values[0];
-            accelYValue = event.values[1];
+            accelXValue -= event.values[0];
+            accelYValue += event.values[1];
         }
     }
+
 
     @Override
     public void onAccuracyChanged(Sensor sensor, int accuracy) {
@@ -62,24 +69,8 @@ public class SurfaceViewActivity extends AppCompatActivity implements SensorEven
 
     public class EventSurfaceView extends SurfaceView implements SurfaceHolder.Callback {
         private SurfaceThread thread;
+        private Bitmap mBitmap;
 
-        public void move(float mx, float my) {
-            accelXValue -= (mx * 10f);
-            accelYValue += (my * 10f);
-
-            if (accelXValue < 0) {
-                accelXValue = 0;
-            } else if (accelXValue > accelYValue) {
-                accelXValue = deviceWidth;
-            }
-
-            if (accelYValue < 0) {
-                accelYValue = 0;
-            } else if (accelYValue > deviceHeight) {
-                accelYValue = deviceHeight;
-            }
-            invalidate();
-        }
 
         @Override
         public boolean performClick() {
@@ -104,15 +95,35 @@ public class SurfaceViewActivity extends AppCompatActivity implements SensorEven
         private void init() {
             getHolder().addCallback(this);
             thread = new SurfaceThread(getHolder(), this);
-            setFocusable(true);
+//            setFocusable(true);
+        }
+
+        @Override
+        protected void onDraw(Canvas canvas) {
+            canvas.drawBitmap(mBitmap, accelXValue, accelYValue, null);
+            invalidate();
         }
 
         public void surfaceChanged(SurfaceHolder arg0, int arg1, int arg2, int arg3) {
+
         }
 
         public void surfaceCreated(SurfaceHolder holder) {
             thread.setRunning(true);
             thread.start();
+        }
+
+        public void move(float x, float y) {
+            accelXValue -= (x * 4f);
+            accelYValue += (y * 4f);
+            mBitmap = BitmapFactory.decodeResource(getResources(), R.mipmap.ic_launcher);
+            int size = mBitmap.getWidth();
+            if (deviceWidth < size + accelXValue) {
+                accelXValue = deviceWidth - size;
+            }
+            if (deviceHeight < size + accelYValue) {
+                accelYValue = deviceHeight - size;
+            }
         }
 
         public void surfaceDestroyed(SurfaceHolder holder) {
@@ -134,6 +145,7 @@ public class SurfaceViewActivity extends AppCompatActivity implements SensorEven
         private SurfaceHolder mThreadSurfaceHolder;
         private EventSurfaceView mThreadSurfaceView;
         private boolean myThreadRun = false;
+        private Bitmap mBitmap;
 
         public SurfaceThread(SurfaceHolder surfaceHolder, EventSurfaceView surfaceView) {
             mThreadSurfaceHolder = surfaceHolder;
@@ -151,17 +163,10 @@ public class SurfaceViewActivity extends AppCompatActivity implements SensorEven
                 try {
                     canvas = mThreadSurfaceHolder.lockCanvas(null);
                     synchronized (mThreadSurfaceHolder) {
-                        Bitmap bitmap = BitmapFactory.decodeResource(getResources(), R.mipmap.ic_launcher);
-//                        move(accelXValue, accelYValue);
-                        canvas.drawBitmap(bitmap, accelXValue, accelYValue, null);
 //                        Log.d(TAG, "run: " + accelXValue);
 //                        Log.d(TAG, "run: " + accelYValue);
-//                        if (accelXValue >= deviceWidth) {
-//                            accelXValue = deviceWidth;
-//                        }
-//                        if (accelYValue >= deviceHeight) {
-//                            accelYValue = deviceHeight;
-//                        }
+                        mBitmap = BitmapFactory.decodeResource(getResources(), R.mipmap.ic_launcher);
+                        canvas.drawBitmap(mBitmap, accelXValue, accelYValue, null);
                     }
                 } finally {
                     if (canvas != null) {
@@ -170,8 +175,7 @@ public class SurfaceViewActivity extends AppCompatActivity implements SensorEven
                 }
             }
         }
-
-
     }
+
 }
 
