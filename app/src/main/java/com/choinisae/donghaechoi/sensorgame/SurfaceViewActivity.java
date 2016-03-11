@@ -118,12 +118,17 @@ public class SurfaceViewActivity extends AppCompatActivity implements SensorEven
             accelYValue += (y * 4f);
             mBitmap = BitmapFactory.decodeResource(getResources(), R.mipmap.ic_launcher);
             int size = mBitmap.getWidth();
-            if (deviceWidth < size + accelXValue) {
+            if (accelXValue < 0) {
+                accelXValue = 0;
+            } else if (deviceWidth < size + accelXValue) {
                 accelXValue = deviceWidth - size;
             }
-            if (deviceHeight < size + accelYValue) {
+            if (accelYValue < 0) {
+                accelYValue = 0;
+            } else if (deviceHeight < size + accelYValue) {
                 accelYValue = deviceHeight - size;
             }
+            invalidate();
         }
 
         public void surfaceDestroyed(SurfaceHolder holder) {
@@ -166,6 +171,17 @@ public class SurfaceViewActivity extends AppCompatActivity implements SensorEven
 //                        Log.d(TAG, "run: " + accelXValue);
 //                        Log.d(TAG, "run: " + accelYValue);
                         mBitmap = BitmapFactory.decodeResource(getResources(), R.mipmap.ic_launcher);
+                        int size = mBitmap.getWidth();
+                        if (accelXValue < 0) {
+                            accelXValue = 0;
+                        } else if (deviceWidth < size + accelXValue) {
+                            accelXValue = deviceWidth - size;
+                        }
+                        if (accelYValue < 0) {
+                            accelYValue = 0;
+                        } else if (deviceHeight < size + accelYValue) {
+                            accelYValue = deviceHeight - size;
+                        }
                         canvas.drawBitmap(mBitmap, accelXValue, accelYValue, null);
                     }
                 } finally {
