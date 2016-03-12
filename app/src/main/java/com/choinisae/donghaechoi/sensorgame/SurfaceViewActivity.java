@@ -15,6 +15,7 @@ import android.util.DisplayMetrics;
 import android.view.SurfaceHolder;
 import android.view.SurfaceView;
 import android.view.WindowManager;
+import android.widget.Toast;
 
 /**
  * Created by donghaechoi on 2016. 3. 10..
@@ -45,12 +46,18 @@ public class SurfaceViewActivity extends AppCompatActivity implements SensorEven
         deviceWidth = display.widthPixels;
         deviceHeight = display.heightPixels;
 
-        view.move(accelXValue, accelXValue);
     }
 
     @Override
     protected void onPause() {
         super.onPause();
+    }
+
+    @Override
+    protected void onResume() {
+        super.onResume();
+        EventSurfaceView view = new EventSurfaceView(this);
+        setContentView(view);
     }
 
     @Override
@@ -70,7 +77,6 @@ public class SurfaceViewActivity extends AppCompatActivity implements SensorEven
     public class EventSurfaceView extends SurfaceView implements SurfaceHolder.Callback {
         private SurfaceThread thread;
         private Bitmap mBitmap;
-
 
         @Override
         public boolean performClick() {
@@ -100,12 +106,11 @@ public class SurfaceViewActivity extends AppCompatActivity implements SensorEven
 
         @Override
         protected void onDraw(Canvas canvas) {
-            canvas.drawBitmap(mBitmap, accelXValue, accelYValue, null);
-            invalidate();
+//            canvas.drawBitmap(mBitmap, accelXValue, accelYValue, null);
+//            invalidate();
         }
 
         public void surfaceChanged(SurfaceHolder arg0, int arg1, int arg2, int arg3) {
-
         }
 
         public void surfaceCreated(SurfaceHolder holder) {
@@ -113,33 +118,22 @@ public class SurfaceViewActivity extends AppCompatActivity implements SensorEven
             thread.start();
         }
 
-        public void move(float x, float y) {
-            accelXValue -= (x * 4f);
-            accelYValue += (y * 4f);
-            mBitmap = BitmapFactory.decodeResource(getResources(), R.mipmap.ic_launcher);
-            int size = mBitmap.getWidth();
-            if (accelXValue < 0) {
-                accelXValue = 0;
-            } else if (deviceWidth < size + accelXValue) {
-                accelXValue = deviceWidth - size;
-            }
-            if (accelYValue < 0) {
-                accelYValue = 0;
-            } else if (deviceHeight < size + accelYValue) {
-                accelYValue = deviceHeight - size;
-            }
-            invalidate();
-        }
+//        public void move(float x, float y) {
+//            accelXValue -= (x * 4f);
+//            accelYValue += (y * 4f);
+//            invalidate();
+//        }
 
         public void surfaceDestroyed(SurfaceHolder holder) {
             boolean retry = true;
+            thread.interrupt();
             thread.setRunning(false);
             while (retry) {
                 try {
                     thread.join();
                     retry = false;
                 } catch (InterruptedException e) {
-                    e.printStackTrace();
+                    Toast.makeText(getApplication(), "스레드 종료", Toast.LENGTH_SHORT).show();
                 }
             }
         }
@@ -150,7 +144,7 @@ public class SurfaceViewActivity extends AppCompatActivity implements SensorEven
         private SurfaceHolder mThreadSurfaceHolder;
         private EventSurfaceView mThreadSurfaceView;
         private boolean myThreadRun = false;
-        private Bitmap mBitmap;
+        private Bitmap mBitmap = BitmapFactory.decodeResource(getResources(), R.mipmap.ic_launcher);
 
         public SurfaceThread(SurfaceHolder surfaceHolder, EventSurfaceView surfaceView) {
             mThreadSurfaceHolder = surfaceHolder;
@@ -167,22 +161,23 @@ public class SurfaceViewActivity extends AppCompatActivity implements SensorEven
                 Canvas canvas = null;
                 try {
                     canvas = mThreadSurfaceHolder.lockCanvas(null);
-                    synchronized (mThreadSurfaceHolder) {
+                    if (canvas != null) {
+                        synchronized (mThreadSurfaceHolder) {
 //                        Log.d(TAG, "run: " + accelXValue);
 //                        Log.d(TAG, "run: " + accelYValue);
-                        mBitmap = BitmapFactory.decodeResource(getResources(), R.mipmap.ic_launcher);
-                        int size = mBitmap.getWidth();
-                        if (accelXValue < 0) {
-                            accelXValue = 0;
-                        } else if (deviceWidth < size + accelXValue) {
-                            accelXValue = deviceWidth - size;
+                            int size = mBitmap.getWidth();
+                            if (accelXValue < 0) {
+                                accelXValue = 0;
+                            } else if (deviceWidth < size + accelXValue) {
+                                accelXValue = deviceWidth - size;
+                            }
+                            if (accelYValue < 0) {
+                                accelYValue = 0;
+                            } else if (deviceHeight < size + accelYValue) {
+                                accelYValue = deviceHeight - size;
+                            }
+                            canvas.drawBitmap(mBitmap, accelXValue, accelYValue, null);
                         }
-                        if (accelYValue < 0) {
-                            accelYValue = 0;
-                        } else if (deviceHeight < size + accelYValue) {
-                            accelYValue = deviceHeight - size;
-                        }
-                        canvas.drawBitmap(mBitmap, accelXValue, accelYValue, null);
                     }
                 } finally {
                     if (canvas != null) {
